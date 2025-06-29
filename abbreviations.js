@@ -4,8 +4,7 @@
 */
 
 export const medicalAbbreviations = [
- [
-  {
+   {
     "id": "arterial-blood-gases",
     "primaryAbbr": "ABG",
     "variants": [],
