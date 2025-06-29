@@ -358,20 +358,37 @@ const ViewSwitcher = ({ currentView, setCurrentView }) => {
     }, "Procedures")
   );
 };
-
 const AbbreviationLookupPanel = ({ abbreviations }) => {
   const [searchTermAbbr, setSearchTermAbbr] = useState('');
 
   const filteredAbbreviations = useMemo(() => {
     if (!abbreviations || !Array.isArray(abbreviations)) return [];
-    if (!searchTermAbbr.trim()) {
+
+    const trimmedSearch = searchTermAbbr.trim();
+    if (!trimmedSearch) {
       return abbreviations;
     }
-    return abbreviations.filter(item =>
-      item.abbr.toLowerCase().includes(searchTermAbbr.toLowerCase()) ||
-      item.fullForm.toLowerCase().includes(searchTermAbbr.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchTermAbbr.toLowerCase())
-    ).sort((a, b) => a.abbr.localeCompare(b.abbr));
+
+    const lowercasedFilter = trimmedSearch.toLowerCase();
+
+    return abbreviations.filter(item => {
+      // --- CHANGES START HERE ---
+      const hasPrimaryAbbr = item.primaryAbbr?.toLowerCase().includes(lowercasedFilter);
+      const hasFullForm = item.fullForm?.toLowerCase().includes(lowercasedFilter);
+      const hasDescription = item.description?.toLowerCase().includes(lowercasedFilter);
+      // Search new fields
+      const hasCategory = item.category?.toLowerCase().includes(lowercasedFilter);
+      const hasNotes = item.notes?.toLowerCase().includes(lowercasedFilter);
+      // Search the 'variants' array
+      const hasVariant = item.variants?.some(v => v.toLowerCase().includes(lowercasedFilter));
+
+      return hasPrimaryAbbr || hasFullForm || hasDescription || hasCategory || hasNotes || hasVariant;
+      // --- CHANGES END HERE ---
+    }).sort((a, b) => {
+      // --- CHANGE HERE ---
+      // Sort by the new 'primaryAbbr' field
+      return a.primaryAbbr.localeCompare(b.primaryAbbr);
+    });
   }, [abbreviations, searchTermAbbr]);
 
   return (
@@ -390,10 +407,28 @@ const AbbreviationLookupPanel = ({ abbreviations }) => {
       React.createElement("ul", { className: "abbreviation-list" },
         filteredAbbreviations.length > 0 ? (
           filteredAbbreviations.map(item => (
+            // --- ALL RENDERING LOGIC UPDATED TO MATCH NEW JSON ---
             React.createElement("li", { key: item.id, className: "abbreviation-item" },
-              React.createElement("strong", { className: "abbreviation-abbr" }, item.abbr),
+              // Display the primary abbreviation and any variants
+              React.createElement("div", { className: "abbreviation-header" },
+                React.createElement("strong", { className: "abbreviation-abbr" }, item.primaryAbbr),
+                (item.variants && item.variants.length > 0) && React.createElement("span", { className: "abbreviation-variants" }, " (Also: " + item.variants.join(', ') + ")")
+              ),
+              // Display the full form
               React.createElement("span", { className: "abbreviation-fullform" }, item.fullForm),
-              React.createElement("p", { className: "abbreviation-desc" }, item.description)
+              // Display the description
+              React.createElement("p", { className: "abbreviation-desc" }, item.description),
+              // Display the notes if they exist
+              item.notes && React.createElement("p", { className: "abbreviation-notes" },
+                React.createElement("strong", null, "Note: "),
+                item.notes
+              ),
+              // Display the new metadata in a container
+              React.createElement("div", { className: "abbreviation-metadata" },
+                item.category && React.createElement("span", { className: "abbreviation-meta-item" }, React.createElement("strong", null, "Category: "), item.category),
+                item.snomedCtId && React.createElement("span", { className: "abbreviation-meta-item" }, React.createElement("strong", null, "SNOMED CT: "), item.snomedCtId),
+                item.icd10Code && React.createElement("span", { className: "abbreviation-meta-item" }, React.createElement("strong", null, "ICD-10: "), item.icd10Code)
+              )
             )
           ))
         ) : (
