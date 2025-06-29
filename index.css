@@ -302,11 +302,12 @@ body.dark-mode .procedures-panel h3 {
 .terminology-item,
 .lab-value-item,
 .mnemonic-item {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-light);
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-light);
   transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  border-radius: 4px;
-  margin-bottom: 0.25rem;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  background-color: var(--white);
 }
 
 .abbreviation-item:hover,
@@ -323,63 +324,127 @@ body.dark-mode .procedures-panel h3 {
 .terminology-item:last-child,
 .lab-value-item:last-child,
 .mnemonic-item:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
+/* NEW: Header for Abbreviation and Terminology Items */
+.abbreviation-header,
+.terminology-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
 
 .abbreviation-abbr,
 .terminology-term {
-  font-weight: bold;
+  font-weight: 600;
   color: var(--primary-color-dark);
-  font-size: 1.1rem;
-  display: block;
-  margin-bottom: 0.2rem;
+  font-size: 1.2rem;
+}
+body.dark-mode .abbreviation-abbr,
+body.dark-mode .terminology-term {
+  color: var(--primary-color);
+}
+
+/* NEW: Category Tags */
+.abbreviation-category-tag,
+.terminology-category-tag {
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+body.dark-mode .abbreviation-category-tag,
+body.dark-mode .terminology-category-tag {
+  background-color: var(--primary-color-dark);
+  color: #e0e0e0;
 }
 
 .abbreviation-fullform {
   display: block;
   font-style: italic;
   color: var(--text-color);
-  margin: 0.2rem 0;
+  margin: 0.2rem 0 0.5rem 0;
 }
 
 .abbreviation-desc,
 .terminology-definition {
   font-size: 0.95rem;
   color: var(--text-color);
-  margin: 0.3rem 0 0 0;
+  margin: 0.3rem 0;
 }
 
-/* Terminology specific styles */
-.terminology-category {
-  display: block;
-  font-size: 0.8rem;
-  font-style: italic;
-  color: var(--text-light);
-  margin-bottom: 0.3rem;
+/* NEW: Terminology Details section */
+.terminology-details {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
   background-color: var(--light-bg);
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  display: inline-block;
+  border-left: 3px solid var(--primary-color);
+  border-radius: 4px;
 }
-body.dark-mode .terminology-category {
-  background-color: var(--border-light); /* Darker chip background */
+body.dark-mode .terminology-details {
+    background-color: var(--secondary-color-darker);
+    border-left-color: var(--primary-color-dark);
 }
-
-
-.terminology-example,
-.terminology-etymology {
+.terminology-detail-item {
   font-size: 0.9rem;
   color: var(--text-light);
-  margin: 0.3rem 0 0 0;
-  padding-left: 0.5rem;
-  border-left: 2px solid var(--border-light);
+  margin: 0.25rem 0 !important;
 }
-.terminology-example em,
-.terminology-etymology em {
+.terminology-detail-item strong {
   color: var(--text-medium);
-  font-style: normal;
   font-weight: 500;
+}
+.terminology-detail-item em {
+    font-style: italic;
+    color: var(--text-color);
+}
+
+.abbreviation-notes {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-light);
+  padding: 0.5rem;
+  background-color: var(--light-bg);
+  border-radius: 4px;
+}
+body.dark-mode .abbreviation-notes {
+    background-color: var(--secondary-color-darker);
+}
+.abbreviation-notes strong {
+  font-style: normal;
+  color: var(--text-medium);
+}
+
+/* NEW: Footer for Abbreviation and Terminology Items */
+.abbreviation-footer,
+.terminology-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+.abbreviation-footer strong,
+.terminology-footer strong {
+  color: var(--text-medium);
+}
+.abbreviation-codes,
+.terminology-codes {
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* Lab Values Panel specific styles / Also used for Nutrition/Procedure disclaimer */

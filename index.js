@@ -4,13 +4,16 @@
 */
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
-import { calculators, getDefaultInputs, getDefaultInputUnits } from './calculators.js';
+import { calculators as mainCalculators, getDefaultInputs, getDefaultInputUnits } from './calculators.js';
+import { calculators as additionalCalculators } from './calculators2.js';
 import { medicalAbbreviations } from './abbreviations.js';
 import { medicalTerms } from './medical_terminology.js';
 import { normalLabValues } from './lab_values.js';
 import { medicalMnemonics } from './mnemonics.js';
 import { nutritionGuidelines } from './nutrition_guidelines.js';
 import { medicalProcedures } from './procedures.js'; // Import procedures
+
+const calculators = [...mainCalculators, ...additionalCalculators];
 
 const App = () => {
   const [currentView, setCurrentView] = useState(() => {
@@ -366,29 +369,21 @@ const AbbreviationLookupPanel = ({ abbreviations }) => {
 
     const trimmedSearch = searchTermAbbr.trim();
     if (!trimmedSearch) {
-      return abbreviations;
+      return abbreviations.sort((a, b) => a.primaryAbbr.localeCompare(b.primaryAbbr));
     }
 
     const lowercasedFilter = trimmedSearch.toLowerCase();
 
     return abbreviations.filter(item => {
-      // --- CHANGES START HERE ---
       const hasPrimaryAbbr = item.primaryAbbr?.toLowerCase().includes(lowercasedFilter);
       const hasFullForm = item.fullForm?.toLowerCase().includes(lowercasedFilter);
       const hasDescription = item.description?.toLowerCase().includes(lowercasedFilter);
-      // Search new fields
       const hasCategory = item.category?.toLowerCase().includes(lowercasedFilter);
       const hasNotes = item.notes?.toLowerCase().includes(lowercasedFilter);
-      // Search the 'variants' array
       const hasVariant = item.variants?.some(v => v.toLowerCase().includes(lowercasedFilter));
 
       return hasPrimaryAbbr || hasFullForm || hasDescription || hasCategory || hasNotes || hasVariant;
-      // --- CHANGES END HERE ---
-    }).sort((a, b) => {
-      // --- CHANGE HERE ---
-      // Sort by the new 'primaryAbbr' field
-      return a.primaryAbbr.localeCompare(b.primaryAbbr);
-    });
+    }).sort((a, b) => a.primaryAbbr.localeCompare(b.primaryAbbr));
   }, [abbreviations, searchTermAbbr]);
 
   return (
@@ -407,27 +402,25 @@ const AbbreviationLookupPanel = ({ abbreviations }) => {
       React.createElement("ul", { className: "abbreviation-list" },
         filteredAbbreviations.length > 0 ? (
           filteredAbbreviations.map(item => (
-            // --- ALL RENDERING LOGIC UPDATED TO MATCH NEW JSON ---
             React.createElement("li", { key: item.id, className: "abbreviation-item" },
-              // Display the primary abbreviation and any variants
               React.createElement("div", { className: "abbreviation-header" },
                 React.createElement("strong", { className: "abbreviation-abbr" }, item.primaryAbbr),
-                (item.variants && item.variants.length > 0) && React.createElement("span", { className: "abbreviation-variants" }, " (Also: " + item.variants.join(', ') + ")")
+                item.category && React.createElement("span", { className: "abbreviation-category-tag" }, item.category)
               ),
-              // Display the full form
               React.createElement("span", { className: "abbreviation-fullform" }, item.fullForm),
-              // Display the description
               React.createElement("p", { className: "abbreviation-desc" }, item.description),
-              // Display the notes if they exist
-              item.notes && React.createElement("p", { className: "abbreviation-notes" },
-                React.createElement("strong", null, "Note: "),
-                item.notes
-              ),
-              // Display the new metadata in a container
-              React.createElement("div", { className: "abbreviation-metadata" },
-                item.category && React.createElement("span", { className: "abbreviation-meta-item" }, React.createElement("strong", null, "Category: "), item.category),
-                item.snomedCtId && React.createElement("span", { className: "abbreviation-meta-item" }, React.createElement("strong", null, "SNOMED CT: "), item.snomedCtId),
-                item.icd10Code && React.createElement("span", { className: "abbreviation-meta-item" }, React.createElement("strong", null, "ICD-10: "), item.icd10Code)
+              item.notes && React.createElement("p", { className: "abbreviation-notes" }, React.createElement("strong", null, "Note: "), item.notes),
+              React.createElement("div", { className: "abbreviation-footer" },
+                (item.variants && item.variants.length > 0) && React.createElement("div", { className: "abbreviation-variants" },
+                  React.createElement("strong", null, "Also: "),
+                  item.variants.join(', ')
+                ),
+                (item.snomedCtId || item.icd10Code) && React.createElement("div", { className: "abbreviation-codes" },
+                  [
+                    item.snomedCtId && `SNOMED CT: ${item.snomedCtId}`,
+                    item.icd10Code && `ICD-10: ${item.icd10Code}`
+                  ].filter(Boolean).join(' | ')
+                )
               )
             )
           ))
@@ -440,20 +433,25 @@ const AbbreviationLookupPanel = ({ abbreviations }) => {
 };
 
 const MedicalTerminologyPanel = ({ terms }) => {
+  const { useState, useMemo } = React;
   const [searchTermTerm, setSearchTermTerm] = useState('');
 
   const filteredTerms = useMemo(() => {
     if (!terms || !Array.isArray(terms)) return [];
-    if (!searchTermTerm.trim()) {
-      return terms;
+    const searchTerm = searchTermTerm.toLowerCase().trim();
+    if (!searchTerm) {
+      return terms.sort((a, b) => a.primaryTerm.localeCompare(b.primaryTerm));
     }
     return terms.filter(item =>
-      item.term.toLowerCase().includes(searchTermTerm.toLowerCase()) ||
-      item.definition.toLowerCase().includes(searchTermTerm.toLowerCase()) ||
-      (item.category && item.category.toLowerCase().includes(searchTermTerm.toLowerCase())) ||
-      (item.example && item.example.toLowerCase().includes(searchTermTerm.toLowerCase())) ||
-      (item.etymology && item.etymology.toLowerCase().includes(searchTermTerm.toLowerCase()))
-    ).sort((a, b) => a.term.localeCompare(b.term));
+      (item.primaryTerm && item.primaryTerm.toLowerCase().includes(searchTerm)) ||
+      (item.definition && item.definition.toLowerCase().includes(searchTerm)) ||
+      (item.primaryAbbr && item.primaryAbbr.toLowerCase().includes(searchTerm)) ||
+      (item.variants && item.variants.some(v => v.toLowerCase().includes(searchTerm))) ||
+      (item.category && item.category.toLowerCase().includes(searchTerm)) ||
+      (item.example && item.example.toLowerCase().includes(searchTerm)) ||
+      (item.etymology && item.etymology.toLowerCase().includes(searchTerm)) ||
+      (item.notes && item.notes.toLowerCase().includes(searchTerm))
+    ).sort((a, b) => a.primaryTerm.localeCompare(b.primaryTerm));
   }, [terms, searchTermTerm]);
 
   return (
@@ -473,11 +471,28 @@ const MedicalTerminologyPanel = ({ terms }) => {
         filteredTerms.length > 0 ? (
           filteredTerms.map(item => (
             React.createElement("li", { key: item.id, className: "terminology-item" },
-              React.createElement("strong", { className: "terminology-term" }, item.term),
-              item.category && React.createElement("span", { className: "terminology-category" }, `Category: ${item.category}`),
+              React.createElement("div", { className: "terminology-header" },
+                React.createElement("strong", { className: "terminology-term" }, item.primaryTerm),
+                item.category && React.createElement("span", { className: "terminology-category-tag" }, item.category)
+              ),
               React.createElement("p", { className: "terminology-definition" }, item.definition),
-              item.example && React.createElement("p", { className: "terminology-example" }, React.createElement("em", null, "Example: "), item.example),
-              item.etymology && React.createElement("p", { className: "terminology-etymology" }, React.createElement("em", null, "Etymology: "), item.etymology)
+              (item.etymology || item.example || item.notes) && React.createElement("div", { className: "terminology-details" },
+                item.etymology && React.createElement("p", { className: "terminology-detail-item" }, React.createElement("strong", null, "Etymology: "), item.etymology),
+                item.example && React.createElement("p", { className: "terminology-detail-item" }, React.createElement("strong", null, "Example: "), React.createElement("em", null, item.example)),
+                item.notes && React.createElement("p", { className: "terminology-detail-item" }, React.createElement("strong", null, "Notes: "), item.notes)
+              ),
+              React.createElement("div", { className: "terminology-footer" },
+                (item.variants && item.variants.length > 0) && React.createElement("div", { className: "terminology-variants" },
+                  React.createElement("strong", null, "Also: "),
+                  item.variants.join(', ')
+                ),
+                (item.snomedCtId || item.icd10Code) && React.createElement("div", { className: "terminology-codes" },
+                  [
+                    item.snomedCtId && `SNOMED CT: ${item.snomedCtId}`,
+                    item.icd10Code && `ICD-10: ${item.icd10Code}`
+                  ].filter(Boolean).join(' | ')
+                )
+              )
             )
           ))
         ) : (
@@ -491,6 +506,7 @@ const MedicalTerminologyPanel = ({ terms }) => {
 const LabValuesPanel = ({ labValues }) => {
   const [searchTermLab, setSearchTermLab] = useState('');
 
+  // No changes needed in this filtering logic
   const filteredLabValues = useMemo(() => {
     if (!labValues || !Array.isArray(labValues)) return [];
     if (!searchTermLab.trim()) {
@@ -528,17 +544,26 @@ const LabValuesPanel = ({ labValues }) => {
                 item.shortName && ` (${item.shortName})`
               ),
               React.createElement("span", { className: "lab-value-category" }, `Category: ${item.category}`),
+              // --- CHANGE #1 START ---
+              // Updated to use the nested 'normal' object
               React.createElement("p", { className: "lab-value-range" },
-                React.createElement("strong", null, "Range: "), item.normalRange, " ", item.unit
+                React.createElement("strong", null, "Range: "),
+                item.normal ? `${item.normal.low} - ${item.normal.high}` : 'N/A',
+                " ",
+                item.unit
               ),
+              // --- CHANGE #1 END ---
               item.description && React.createElement("p", { className: "lab-value-description" }, item.description),
               item.notes && React.createElement("p", { className: "lab-value-notes" }, React.createElement("em", null, "Notes: "), item.notes),
-              (item.criticalLow || item.criticalHigh) && React.createElement("p", { className: "lab-value-critical" },
+              // --- CHANGE #2 START ---
+              // Updated to check for and use the nested 'critical' object
+              item.critical && (item.critical.low || item.critical.high) && React.createElement("p", { className: "lab-value-critical" },
                 React.createElement("strong", null, "Critical: "),
-                item.criticalLow && `Low: ${item.criticalLow} ${item.unit}`,
-                item.criticalLow && item.criticalHigh && "; ",
-                item.criticalHigh && `High: ${item.criticalHigh} ${item.unit}`
+                item.critical.low && `Low < ${item.critical.low} ${item.unit}`,
+                item.critical.low && item.critical.high && "; ",
+                item.critical.high && `High > ${item.critical.high} ${item.unit}`
               )
+              // --- CHANGE #2 END ---
             )
           ))
         ) : (
@@ -967,16 +992,18 @@ const ResultDisplay = ({ result, unit, interpretedText, resultLabel }) => {
   let displayResult;
   if (isFeedback) {
     displayResult = React.createElement("p", { className: "result-text-alert" }, React.createElement("span", { className: "value" }, result));
-  } else if (typeof result === 'object' && result !== null) { // Handle object results (e.g., BMR/TDEE, Macros)
-    displayResult = Object.entries(result).map(([key, value]) => {
-      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-      const valueUnit = unit && typeof unit === 'object' ? unit[key] : (typeof unit === 'string' ? unit : '');
-      return React.createElement("p", { key: key },
-        React.createElement("strong", null, `${label}: `),
-        React.createElement("span", { className: "value" }, (typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 2) : value)),
-        valueUnit && React.createElement("span", { className: "unit" }, " ", valueUnit)
-      );
-    });
+  } else if (typeof result === 'object' && result !== null) { // Handle object results
+    displayResult = Object.entries(result)
+      .filter(([, value]) => value !== null && value !== undefined)
+      .map(([key, value]) => {
+        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        const valueUnit = unit && typeof unit === 'object' ? unit[key] : (typeof unit === 'string' ? unit : '');
+        return React.createElement("p", { key: key },
+          React.createElement("strong", null, `${label}: `),
+          React.createElement("span", { className: "value" }, (typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 2) : value)),
+          valueUnit && React.createElement("span", { className: "unit" }, " ", valueUnit)
+        );
+      });
   } else { // Handle single string or number results
     displayResult = React.createElement("p", null,
       resultLabel && !String(resultLabel).toLowerCase().includes(typeof result === 'number' ? 'score' : '') && !String(resultLabel).toLowerCase().includes('classification') && React.createElement("strong", null, `${resultLabel}: `),

@@ -12,6 +12,7 @@ const ASSETS_TO_CACHE = [
   './favicon.svg',
   './manifest.json',
   './calculators.js',
+  './calculators2.js',
   './abbreviations.js',
   './medical_terminology.js',
   './lab_values.js',

@@ -4,7 +4,7 @@
 */
 
 export const medicalAbbreviations = [
-   {
+    {
     "id": "arterial-blood-gases",
     "primaryAbbr": "ABG",
     "variants": [],
@@ -586,7 +586,8 @@ export const medicalAbbreviations = [
     "snomedCtId": "46177005",
     "icd10Code": "N18.6",
     "notes": null
-  },
+  }
+  ,
   {
     "id": "follicle-stimulating-hormone",
     "primaryAbbr": "FSH",
